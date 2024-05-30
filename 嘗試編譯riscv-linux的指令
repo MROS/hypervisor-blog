@@ -1,0 +1,98 @@
+編譯 RISV-linux
+
+```
+# set up cross-compile tools
+# download
+wget https://musl.cc/aarch64-linux-musl-cross.tgz
+# install
+tar zxf aarch64-linux-musl-cross.tgz
+# exec below command in bash
+export PATH=`pwd`/aarch64-linux-musl-cross/bin:$PATH
+# OR add below info in ~/.bashrc
+# echo PATH=`pwd`/aarch64-linux-musl-cross/bin:$PATH >> ~/.bashrc
+
+# download and unzip linux kernel
+wget https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/snapshot/linux-6.2.15.tar.gz
+tar -xvf linux-6.2.15.tar.gz
+cd linux-6.2.15
+
+# build linux
+mkdir build
+make O=build ARCH=riscv CROSS_COMPILE=riscv64-linux-musl- defconfig
+make O=build ARCH=riscv CROSS_COMPILE=riscv64-linux-musl- -j8
+```
+
+編譯 rootfs
+
+```
+# use busybox to build rootfs
+# download
+wget https://busybox.net/downloads/busybox-1.36.1.tar.bz2
+tar xvf busybox-1.36.1.tar.bz2
+
+# compile busybox
+cd busybox-1.36.1
+mkdir build
+make O=build ARCH=riscv defconfig
+make O=build ARCH=riscv menuconfig
+## select and save the following settings
+## Settings -> [*] Don't use /usr
+## Settings -> [*] Build static binary (no shared libs)
+## Settings -> (riscv64-linux-musl-) Cross compiler prefix
+make O=build #-j4
+make O=build install
+
+# build rootfs
+cd build/_install && mkdir -pv {etc,proc,sys,dev,usr/{bin,sbin}}
+cd ..
+## create a image
+dd if=/dev/zero of=rootfs.img bs=1M count=512 
+## format filesystem
+mkfs.ext4 rootfs.img
+## mount filesystem
+mkdir tmp
+sudo mount rootfs.img tmp
+## copy and create the content of the filesystem to mount point
+sudo cp -r _install/* tmp/
+cd tmp/dev
+sudo mknod console c 5 1
+sudo mknod null c 1 3
+sudo mknod tty1 c 4 1 
+sudo mknod tty2 c 4 1 
+sudo mknod tty3 c 4 1 
+sudo mknod tty4 c 4 1 
+## create /etc/fstab
+cd ../etc
+sudo vim fstab
+## copy following content to fstab
+proc     /proc                   proc     defaults        0 0
+sysfs    /sys                    sysfs    defaults        0 0
+## create /etc/init.d/rcS
+sudo mkdir init.d && cd init.d
+sudo vim rcS
+## copy following content to rcS
+#!/bin/sh
+echo -e "Welcome to arceos Linux"
+mount -a
+echo -e "Remounting the root filesystem"
+## 讓 rcS 有執行權限
+sudo chmod 777 rcS
+## create /etc/inittab
+cd ..
+sudo vim inittab
+## copy following content to inittab
+# /etc/inittab
+::sysinit:/etc/init.d/rcS
+console::respawn:-/bin/sh
+::ctrlaltdel:/sbin/reboot
+::shutdown:/bin/umount -a -r
+## umount filesystem
+cd ../../
+sudo umount tmp
+```
+置入核心與rootfs
+```
+cp ../linux-6.2.15/build/arch/riscv/boot/Image apps/hv/guest/linux/linux.bin
+cp ../busybox-1.36.1/build/rootfs.img apps/hv/guest/linux/rootfs.img
+```
+
