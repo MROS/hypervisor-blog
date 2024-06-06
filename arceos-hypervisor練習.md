@@ -4,6 +4,7 @@
 
 RISCV 版的文件讓人去百度雲盤下載 RISC-V 的 Linux ，但我註冊不了百度雲盤，只好試着自己編譯，從 arm 版的文件改一改看能不能動。
 
+無果，只好在群裡請人幫上傳到其他雲端。
 
 ### 2.
 1. 增加了 HS, VS, VU ，VS 是虛擬機的 supervisor 模式，VU 是虛擬機上的用戶模式，注意此時 U 模式的應用仍可以跑在 HS 上。（猜想：所以 arceos-hypervisor 可以同時執行 App 跟虛擬機？如同 linux-kvm 一樣。）
