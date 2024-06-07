@@ -24,7 +24,6 @@ attach vm-name # 拿到指定 VM 的 shell
 ```
 
 
-
 ## CPU 虛擬化
 
 ## 內存虛擬化
