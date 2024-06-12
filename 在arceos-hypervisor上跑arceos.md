@@ -1,0 +1,32 @@
+編譯 helloworld ，應該含有除錯符號
+make ARCH=riscv64 A=apps/helloworld LOG=debug MODE=debug build
+
+執行 arceos-helloworld 
+```sh
+ qemu-system-riscv64 -m 128M -smp 1 -machine virt -bios default -kernel apps/helloworld/helloworld_qemu-virt-riscv.bin -nographic
+```
+
+
+
+執行 linux on arceos-hypervisor
+```sh
+qemu-system-riscv64 -m 3G -smp 1 -machine virt -bios default -kernel apps/hv/hv_qemu-virt-riscv.bin -device loader,file=apps/hv/guest/linux/linux.dtb,addr=0x90000000,force-raw=on -device loader,file=apps/hv/guest/linux/linux.bin,addr=0x90200000,force-raw=on -drive file=apps/hv/guest/linux/rootfs.img,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 -append "root=/dev/vda rw console=ttyS0"  -nographic
+```
+
+qemu-system-riscv64 -m 3G -smp 1 -machine virt -bios default -kernel apps/hv/hv_qemu-virt-riscv.bin -device loader,file=apps/hv/guest/linux/linux.dtb,addr=0x90000000,force-raw=on -device loader,file=apps/hv/guest/linux/linux.bin,addr=0x90200000,force-raw=on -drive file=apps/hv/guest/linux/rootfs.img,format=raw,id=hd0 -device virtio-net-device,netdev=net0 -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555 -device virtio-blk-device,drive=hd0 -append "root=/dev/vda rw console=ttyS0" -nographic
+
+
+
+執行 arceos-helloworld on arceos-hypervisor, 啟用虛擬機 gdb-server
+```sh
+qemu-system-riscv64 -m 3G -smp 1 -machine virt -bios default -kernel apps/hv/hv_qemu-virt-riscv.bin -device loader,file=apps/hv/guest/linux/linux.dtb,addr=0x90000000,force-raw=on -device loader,file=apps/helloworld/helloworld_qemu-virt-riscv.bin,addr=0x90200000,force-raw=on -device virtio-net-device,netdev=net0 -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555 -append "rw console=ttyS0" -nographic
+```
+
+外部使用 gdb
+```
+gdb-multiarch
+(gdb) add-symbol-file helloworld_qemu-virt-riscv.elf 0x90200000
+(gdb) remove-symbol-file -a 0x90200000
+(gdb) add-symbol-file helloworld_qemu-virt-riscv.elf 0xffffffc090200000
+
+```
