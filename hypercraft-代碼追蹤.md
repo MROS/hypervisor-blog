@@ -16,6 +16,12 @@
 其他
 - hart = hardware threads
 
+## 僞指令
+- la
+    `la rd symbol` ，將 symbol 所在的地址放入 rd。
+- li
+    `li rd 立即數` ，將 rd 改爲立即數，若立即數大於 2^12 ，會被分解爲 lui, addi 兩條指令來完成，否則，用 lui 一條就可以。
+
 ## hypercraft 定義之結構
 
 ### PerCpu
